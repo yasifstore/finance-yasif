@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance Yasif</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="hero-card">
+      <div class="top-label">Private Money Tracker</div>
+
+      <h1>Finance Yasif</h1>
+      <p class="subtitle">
+        Catatan saldo, pemasukan, pengeluaran, dan penjualan harian.
+      </p>
+
+      <div class="balance-card">
+        <span>Saldo Saat Ini</span>
+        <h2 id="balanceAmount">Rp0</h2>
+      </div>
+
+      <div class="today-grid">
+        <div class="mini-card">
+          <span>Cup Terjual</span>
+          <strong id="cupCount">0 cup</strong>
+        </div>
+
+        <div class="mini-card">
+          <span>Profit Cup</span>
+          <strong id="cupProfit">Rp0</strong>
+        </div>
+
+        <div class="mini-card">
+          <span>Pemasukan</span>
+          <strong id="todayIncome">Rp0</strong>
+        </div>
+
+        <div class="mini-card">
+          <span>Pengeluaran</span>
+          <strong id="todayExpense">Rp0</strong>
+        </div>
+      </div>
+      <div class="month-card">
+  <div class="month-header">
+    <span>Ringkasan Bulan Ini</span>
+    <strong id="monthName">-</strong>
+  </div>
+
+  <div class="month-row">
+    <span>Pemasukan</span>
+    <strong id="monthIncome">Rp0</strong>
+  </div>
+
+  <div class="month-row">
+    <span>Pengeluaran</span>
+    <strong id="monthExpense">Rp0</strong>
+  </div>
+
+  <div class="month-row total">
+    <span>Sisa Bersih</span>
+    <strong id="monthNet">Rp0</strong>
+  </div>
+</div>
+
+      <div class="action-buttons">
+        <button class="btn income" id="openIncomeBtn">+ Pemasukan</button>
+        <button class="btn expense" id="openExpenseBtn">- Pengeluaran</button>
+        <button class="btn sales" id="openSalesBtn">+ Penjualan Cup</button>
+      </div>
+    </section>
+
+    <section class="history-card">
+  <div class="history-top">
+    <h3 id="historyTitle">Transaksi Hari Ini</h3>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" id="filterTodayBtn">Hari Ini</button>
+      <button class="filter-tab" id="filterAllBtn">Semua</button>
+    </div>
+  </div>
+
+  <div id="historyList">
+    <div class="empty-state">
+      Belum ada transaksi hari ini.
+    </div>
+  </div>
+  <div class="danger-zone">
+  <button class="export-data-btn" id="exportDataBtn">
+    Export CSV
+  </button>
+
+  <button class="clear-data-btn" id="clearDataBtn">
+    Reset Data
+  </button>
+</div>
+</section>
+  </main>
+
+  <div class="modal hidden" id="transactionModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Tambah Transaksi</h3>
+        <button class="close-btn" id="closeModalBtn">×</button>
+      </div>
+
+      <form id="transactionForm">
+        <input type="hidden" id="transactionType" />
+
+        <div class="form-group" id="amountGroup">
+          <label for="amountInput">Nominal</label>
+          <input
+            type="number"
+            id="amountInput"
+            placeholder="Contoh: 50000"
+            min="0"
+          />
+        </div>
+
+        <div class="form-group hidden" id="cupGroup">
+          <label for="cupInput">Jumlah cup terjual</label>
+          <input
+            type="number"
+            id="cupInput"
+            placeholder="Contoh: 10"
+            min="0"
+          />
+
+          <p class="helper-text">
+            Profit otomatis: Rp2.500 × jumlah cup
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="noteInput">Keterangan</label>
+          <textarea
+            id="noteInput"
+            placeholder="Opsional, boleh dikosongkan"
+          ></textarea>
+        </div>
+
+        <button type="submit" class="save-btn">
+          Simpan Transaksi
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
