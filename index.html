@@ -8,9 +8,51 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="app">
+  <section class="auth-screen" id="authScreen">
+    <div class="auth-card">
+      <div class="top-label">Private Access</div>
+
+      <h1>Finance Yasif</h1>
+      <p class="subtitle">
+        Login dulu untuk masuk ke dashboard pribadi.
+      </p>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="emailInput">Email</label>
+          <input
+            type="email"
+            id="emailInput"
+            placeholder="email kamu"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="passwordInput">Password</label>
+          <input
+            type="password"
+            id="passwordInput"
+            placeholder="password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="save-btn">
+          Login
+        </button>
+      </form>
+
+      <p class="auth-message" id="authMessage"></p>
+    </div>
+  </section>
+
+  <main class="app hidden" id="appScreen">
     <section class="hero-card">
       <div class="top-label">Private Money Tracker</div>
+      <button class="logout-btn" id="logoutBtn">
+  Logout
+</button>
 
       <h1>Finance Yasif</h1>
       <p class="subtitle">
@@ -148,6 +190,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
 </body>
 </html>
