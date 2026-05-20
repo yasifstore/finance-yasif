@@ -54,6 +54,7 @@ const emailInput = document.getElementById("emailInput");
 const passwordInput = document.getElementById("passwordInput");
 const authMessage = document.getElementById("authMessage");
 const logoutBtn = document.getElementById("logoutBtn");
+const userEmail = document.getElementById("userEmail");
 
 function formatRupiah(number) {
   return new Intl.NumberFormat("id-ID", {
@@ -506,12 +507,21 @@ async function checkSession() {
 function showApp() {
   authScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
+
+  if (currentUser && userEmail) {
+    userEmail.textContent = currentUser.email;
+  }
+
   renderDashboard();
 }
 
 function showLogin() {
   appScreen.classList.add("hidden");
   authScreen.classList.remove("hidden");
+
+  if (userEmail) {
+    userEmail.textContent = "";
+  }
 }
 
 async function loginUser(event) {
