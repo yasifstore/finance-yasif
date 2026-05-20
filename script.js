@@ -1,3 +1,8 @@
+const SUPABASE_URL = "https://edrzcutzuilwswzhawxr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_bOxEEi-NK8DF7saCLEmRIg_iqSVl1yO";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const PROFIT_PER_CUP = 2500;
 const STORAGE_KEY = "finance-yasif-transactions";
 
@@ -11,6 +16,7 @@ const todayIncome = document.getElementById("todayIncome");
 const todayExpense = document.getElementById("todayExpense");
 const historyList = document.getElementById("historyList");
 const historyTitle = document.getElementById("historyTitle");
+
 const monthName = document.getElementById("monthName");
 const monthIncome = document.getElementById("monthIncome");
 const monthExpense = document.getElementById("monthExpense");
@@ -37,8 +43,17 @@ const openSalesBtn = document.getElementById("openSalesBtn");
 
 const filterTodayBtn = document.getElementById("filterTodayBtn");
 const filterAllBtn = document.getElementById("filterAllBtn");
+
 const clearDataBtn = document.getElementById("clearDataBtn");
 const exportDataBtn = document.getElementById("exportDataBtn");
+
+const authScreen = document.getElementById("authScreen");
+const appScreen = document.getElementById("appScreen");
+const loginForm = document.getElementById("loginForm");
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const authMessage = document.getElementById("authMessage");
+const logoutBtn = document.getElementById("logoutBtn");
 
 function formatRupiah(number) {
   return new Intl.NumberFormat("id-ID", {
@@ -59,7 +74,8 @@ function getTodayDate() {
 }
 
 function formatDate(dateString) {
-  const date = new Date(dateString);
+  const [year, month, day] = dateString.split("-");
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
 
   return new Intl.DateTimeFormat("id-ID", {
     day: "numeric",
@@ -67,6 +83,7 @@ function formatDate(dateString) {
     year: "numeric"
   }).format(date);
 }
+
 function getCurrentMonthKey() {
   const today = new Date();
 
@@ -100,7 +117,7 @@ function saveTransactions() {
 }
 
 function escapeHTML(text) {
-  return text
+  return String(text ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -187,6 +204,22 @@ function addTransaction(event) {
   renderDashboard();
   closeModal();
 }
+
+function deleteTransaction(id) {
+  const confirmDelete = confirm("Hapus transaksi ini?");
+
+  if (!confirmDelete) {
+    return;
+  }
+
+  transactions = transactions.filter((item) => {
+    return item.id !== id;
+  });
+
+  saveTransactions();
+  renderDashboard();
+}
+
 function clearAllData() {
   const confirmClear = confirm("Hapus semua data transaksi?");
 
@@ -205,6 +238,7 @@ function clearAllData() {
   saveTransactions();
   renderDashboard();
 }
+
 function csvSafe(value) {
   const text = String(value ?? "");
   return `"${text.replaceAll('"', '""')}"`;
@@ -271,21 +305,6 @@ function exportToCSV() {
   URL.revokeObjectURL(url);
 }
 
-function deleteTransaction(id) {
-  const confirmDelete = confirm("Hapus transaksi ini?");
-
-  if (!confirmDelete) {
-    return;
-  }
-
-  transactions = transactions.filter((item) => {
-    return item.id !== id;
-  });
-
-  saveTransactions();
-  renderDashboard();
-}
-
 function setFilter(filterName) {
   activeFilter = filterName;
 
@@ -310,11 +329,12 @@ function renderDashboard() {
   const todayTransactions = transactions.filter((item) => {
     return item.date === today;
   });
+
   const currentMonth = getCurrentMonthKey();
 
-const monthTransactions = transactions.filter((item) => {
-  return item.date.startsWith(currentMonth);
-});
+  const monthTransactions = transactions.filter((item) => {
+    return item.date.startsWith(currentMonth);
+  });
 
   const balance = transactions.reduce((total, item) => {
     if (item.type === "expense") {
@@ -337,23 +357,6 @@ const monthTransactions = transactions.filter((item) => {
 
     return total;
   }, 0);
-  const incomeMonth = monthTransactions.reduce((total, item) => {
-  if (item.type === "income" || item.type === "sales") {
-    return total + item.amount;
-  }
-
-  return total;
-}, 0);
-
-const expenseMonth = monthTransactions.reduce((total, item) => {
-  if (item.type === "expense") {
-    return total + item.amount;
-  }
-
-  return total;
-}, 0);
-
-const netMonth = incomeMonth - expenseMonth;
 
   const expenseToday = todayTransactions.reduce((total, item) => {
     if (item.type === "expense") {
@@ -363,15 +366,34 @@ const netMonth = incomeMonth - expenseMonth;
     return total;
   }, 0);
 
+  const incomeMonth = monthTransactions.reduce((total, item) => {
+    if (item.type === "income" || item.type === "sales") {
+      return total + item.amount;
+    }
+
+    return total;
+  }, 0);
+
+  const expenseMonth = monthTransactions.reduce((total, item) => {
+    if (item.type === "expense") {
+      return total + item.amount;
+    }
+
+    return total;
+  }, 0);
+
+  const netMonth = incomeMonth - expenseMonth;
+
   balanceAmount.textContent = formatRupiah(balance);
   cupCount.textContent = `${totalCup} cup`;
   cupProfit.textContent = formatRupiah(totalCupProfit);
   todayIncome.textContent = formatRupiah(incomeToday);
   todayExpense.textContent = formatRupiah(expenseToday);
+
   monthName.textContent = getCurrentMonthName();
-monthIncome.textContent = formatRupiah(incomeMonth);
-monthExpense.textContent = formatRupiah(expenseMonth);
-monthNet.textContent = formatRupiah(netMonth);
+  monthIncome.textContent = formatRupiah(incomeMonth);
+  monthExpense.textContent = formatRupiah(expenseMonth);
+  monthNet.textContent = formatRupiah(netMonth);
 
   const listTransactions = activeFilter === "today"
     ? todayTransactions
@@ -429,6 +451,54 @@ function renderHistory(listTransactions) {
   }).join("");
 }
 
+async function checkSession() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    showApp();
+  } else {
+    showLogin();
+  }
+}
+
+function showApp() {
+  authScreen.classList.add("hidden");
+  appScreen.classList.remove("hidden");
+  renderDashboard();
+}
+
+function showLogin() {
+  appScreen.classList.add("hidden");
+  authScreen.classList.remove("hidden");
+}
+
+async function loginUser(event) {
+  event.preventDefault();
+
+  authMessage.textContent = "Sedang login...";
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    authMessage.textContent = "Login gagal. Cek email/password.";
+    return;
+  }
+
+  authMessage.textContent = "";
+  showApp();
+}
+
+async function logoutUser() {
+  await supabaseClient.auth.signOut();
+  showLogin();
+}
+
 openIncomeBtn.addEventListener("click", () => openModal("income"));
 openExpenseBtn.addEventListener("click", () => openModal("expense"));
 openSalesBtn.addEventListener("click", () => openModal("sales"));
@@ -438,8 +508,12 @@ transactionForm.addEventListener("submit", addTransaction);
 
 filterTodayBtn.addEventListener("click", () => setFilter("today"));
 filterAllBtn.addEventListener("click", () => setFilter("all"));
+
 clearDataBtn.addEventListener("click", clearAllData);
 exportDataBtn.addEventListener("click", exportToCSV);
+
+loginForm.addEventListener("submit", loginUser);
+logoutBtn.addEventListener("click", logoutUser);
 
 modal.addEventListener("click", (event) => {
   if (event.target === modal) {
@@ -458,4 +532,4 @@ historyList.addEventListener("click", (event) => {
   deleteTransaction(transactionId);
 });
 
-renderDashboard();
+checkSession();
