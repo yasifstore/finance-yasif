@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-yasif-v1";
+const CACHE_NAME = "finance-yasif-v2";
 
 const FILES_TO_CACHE = [
   "/",
@@ -6,7 +6,8 @@ const FILES_TO_CACHE = [
   "/style.css",
   "/script.js",
   "/manifest.json",
-  "/icon.svg"
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
