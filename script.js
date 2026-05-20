@@ -4,10 +4,10 @@ const SUPABASE_KEY = "sb_publishable_bOxEEi-NK8DF7saCLEmRIg_iqSVl1yO";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const PROFIT_PER_CUP = 2500;
-const STORAGE_KEY = "finance-yasif-transactions";
 
-let transactions = loadTransactions();
+let transactions = [];
 let activeFilter = "today";
+let currentUser = null;
 
 const balanceAmount = document.getElementById("balanceAmount");
 const cupCount = document.getElementById("cupCount");
@@ -102,20 +102,6 @@ function getCurrentMonthName() {
   }).format(today);
 }
 
-function loadTransactions() {
-  const savedData = localStorage.getItem(STORAGE_KEY);
-
-  if (!savedData) {
-    return [];
-  }
-
-  return JSON.parse(savedData);
-}
-
-function saveTransactions() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-}
-
 function escapeHTML(text) {
   return String(text ?? "")
     .replaceAll("&", "&amp;")
@@ -123,6 +109,31 @@ function escapeHTML(text) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+async function loadTransactionsFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("transactions")
+    .select("id, transaction_date, type, amount, note, cup, profit_per_cup, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Gagal mengambil data dari Supabase.");
+    console.error(error);
+    return;
+  }
+
+  transactions = data.map((item) => {
+    return {
+      id: item.id,
+      date: item.transaction_date,
+      type: item.type,
+      amount: Number(item.amount),
+      note: item.note || "",
+      cup: Number(item.cup || 0),
+      profitPerCup: Number(item.profit_per_cup || PROFIT_PER_CUP)
+    };
+  });
 }
 
 function openModal(type) {
@@ -154,7 +165,7 @@ function closeModal() {
   modal.classList.add("hidden");
 }
 
-function addTransaction(event) {
+async function addTransaction(event) {
   event.preventDefault();
 
   const type = transactionType.value;
@@ -189,38 +200,56 @@ function addTransaction(event) {
     }
   }
 
-  const transaction = {
-    id: Date.now(),
-    date: getTodayDate(),
-    type: type,
-    amount: amount,
-    note: finalNote,
-    cup: cup
-  };
+  const { error } = await supabaseClient
+    .from("transactions")
+    .insert({
+      transaction_date: getTodayDate(),
+      type: type,
+      amount: amount,
+      note: finalNote,
+      cup: cup,
+      profit_per_cup: PROFIT_PER_CUP
+    });
 
-  transactions.unshift(transaction);
+  if (error) {
+    alert("Gagal menyimpan transaksi ke Supabase.");
+    console.error(error);
+    return;
+  }
 
-  saveTransactions();
+  await loadTransactionsFromSupabase();
   renderDashboard();
   closeModal();
 }
 
-function deleteTransaction(id) {
+async function deleteTransaction(id) {
   const confirmDelete = confirm("Hapus transaksi ini?");
 
   if (!confirmDelete) {
     return;
   }
 
-  transactions = transactions.filter((item) => {
-    return item.id !== id;
-  });
+  const { error } = await supabaseClient
+    .from("transactions")
+    .delete()
+    .eq("id", id);
 
-  saveTransactions();
+  if (error) {
+    alert("Gagal menghapus transaksi.");
+    console.error(error);
+    return;
+  }
+
+  await loadTransactionsFromSupabase();
   renderDashboard();
 }
 
-function clearAllData() {
+async function clearAllData() {
+  if (transactions.length === 0) {
+    alert("Belum ada data untuk dihapus.");
+    return;
+  }
+
   const confirmClear = confirm("Hapus semua data transaksi?");
 
   if (!confirmClear) {
@@ -233,9 +262,20 @@ function clearAllData() {
     return;
   }
 
-  transactions = [];
+  const transactionIds = transactions.map((item) => item.id);
 
-  saveTransactions();
+  const { error } = await supabaseClient
+    .from("transactions")
+    .delete()
+    .in("id", transactionIds);
+
+  if (error) {
+    alert("Gagal reset data.");
+    console.error(error);
+    return;
+  }
+
+  await loadTransactionsFromSupabase();
   renderDashboard();
 }
 
@@ -455,6 +495,8 @@ async function checkSession() {
   const { data } = await supabaseClient.auth.getSession();
 
   if (data.session) {
+    currentUser = data.session.user;
+    await loadTransactionsFromSupabase();
     showApp();
   } else {
     showLogin();
@@ -480,15 +522,20 @@ async function loginUser(event) {
   const email = emailInput.value.trim();
   const password = passwordInput.value;
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
     email: email,
     password: password
   });
 
   if (error) {
     authMessage.textContent = "Login gagal. Cek email/password.";
+    console.error(error);
     return;
   }
+
+  currentUser = data.user;
+
+  await loadTransactionsFromSupabase();
 
   authMessage.textContent = "";
   showApp();
@@ -496,6 +543,10 @@ async function loginUser(event) {
 
 async function logoutUser() {
   await supabaseClient.auth.signOut();
+
+  currentUser = null;
+  transactions = [];
+
   showLogin();
 }
 
